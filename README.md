@@ -94,50 +94,25 @@ Health check endpoint.
 
 Clear downloaded assets and cached data.
 
-## Usage Examples
+## 🌐 How Any Service Can Hit This API
 
-### Using curl
-
-```bash
-curl -X POST http://localhost:8000/scrape \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://example.com",
-    "save_assets": true,
-    "convert_to_webp": true,
-    "timeout": 60000
-  }'
+Once deployed on Railway, you get a **public HTTPS URL**:
+```
+https://your-app-name.up.railway.app
 ```
 
-### Using Python
+**Anyone can make HTTP POST requests to this URL** - no special setup required!
 
-```python
-import requests
-
-response = requests.post(
-    "http://localhost:8000/scrape",
-    json={
-        "url": "https://example.com",
-        "save_assets": True,
-        "convert_to_webp": True,
-        "timeout": 60000
-    }
-)
-
-data = response.json()
-print(data)
-```
-
-### Using JavaScript/TypeScript
+### Quick Example (JavaScript)
 
 ```javascript
-const response = await fetch('http://localhost:8000/scrape', {
+// From ANY frontend, backend, or service:
+const response = await fetch('https://your-app.up.railway.app/scrape', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     url: 'https://example.com',
-    save_assets: true,
-    convert_to_webp: true,
+    save_assets: false,  // Set to false for faster response
     timeout: 60000
   })
 });
@@ -145,6 +120,29 @@ const response = await fetch('http://localhost:8000/scrape', {
 const data = await response.json();
 console.log(data);
 ```
+
+### Quick Example (cURL)
+
+```bash
+curl -X POST https://your-app.up.railway.app/scrape \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
+```
+
+### Quick Example (Python)
+
+```python
+import requests
+
+response = requests.post(
+    "https://your-app.up.railway.app/scrape",
+    json={"url": "https://example.com"}
+)
+data = response.json()
+```
+
+📚 **For complete examples** in JavaScript, Python, Go, Rust, Ruby, and more:
+👉 See [API_USAGE_EXAMPLES.md](API_USAGE_EXAMPLES.md)
 
 ## Output Structure
 
