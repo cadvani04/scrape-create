@@ -10,8 +10,10 @@ import asyncio
 from datetime import datetime
 import os
 from pathlib import Path
+import httpx
 
 from scraper.scrape_controller import scrape_website
+from scraper.v0_integration import build_v0_prompt, send_to_v0
 
 app = FastAPI(
     title="Website Scraper API",
@@ -93,6 +95,65 @@ async def scrape_endpoint(request: ScrapeRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error scraping website: {str(e)}"
+        )
+
+@app.post("/scrape-and-create")
+async def scrape_and_create(request: ScrapeRequest):
+    """
+    Scrape a website and automatically send to v0.dev to create an app.
+    
+    - **url**: Website URL to scrape
+    - **save_assets**: Whether to download and save assets locally
+    - **timeout**: Page load timeout in milliseconds
+    """
+    try:
+        url = str(request.url)
+        
+        # Step 1: Scrape the website
+        print(f"[API] Scraping {url}...")
+        scrape_result = await scrape_website(
+            url=url,
+            save_assets=False,  # Faster without assets
+            convert_to_webp=False,
+            timeout=request.timeout
+        )
+        
+        # Step 2: Build v0 prompt from scraped data
+        print("[API] Building v0 prompt...")
+        v0_prompt = build_v0_prompt(scrape_result, url)
+        
+        # Step 3: Send to v0.dev
+        print("[API] Sending to v0.dev...")
+        v0_api_key = os.environ.get("V0_API_KEY")
+        
+        if not v0_api_key:
+            # Return scraped data with prompt, but don't send to v0
+            return {
+                "status": "success",
+                "url": url,
+                "timestamp": datetime.now().isoformat(),
+                "scrape_data": scrape_result,
+                "v0_prompt": v0_prompt,
+                "v0_response": None,
+                "message": "V0_API_KEY not set. Returning prompt only."
+            }
+        
+        v0_response = await send_to_v0(v0_prompt, v0_api_key)
+        
+        return {
+            "status": "success",
+            "url": url,
+            "timestamp": datetime.now().isoformat(),
+            "scrape_data": scrape_result,
+            "v0_prompt": v0_prompt,
+            "v0_response": v0_response,
+            "message": "Successfully scraped and sent to v0.dev!"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error in scrape and create: {str(e)}"
         )
 
 @app.delete("/clear-cache")

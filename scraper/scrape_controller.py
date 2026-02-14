@@ -58,34 +58,27 @@ async def scrape_website(url: str, save_assets: bool = True, convert_to_webp: bo
             
             print(f"[Scraper] Navigating to {url}...")
             
-            # Navigate and wait for network to be idle
-            await page.goto(url, wait_until='networkidle', timeout=timeout)
+            # Navigate and wait for load (use 'load' instead of 'networkidle' for faster response)
+            await page.goto(url, wait_until='load', timeout=timeout)
             
-            # Additional wait for lazy-loaded content
-            await page.wait_for_timeout(2000)
+            # Brief wait for any immediate dynamic content
+            await page.wait_for_timeout(1000)
             
-            # Scroll to bottom to trigger lazy-loaded images
+            # Quick scroll to trigger lazy-loaded images (optimized)
             await page.evaluate("""
                 async () => {
-                    await new Promise((resolve) => {
-                        let totalHeight = 0;
-                        const distance = 100;
-                        const timer = setInterval(() => {
-                            window.scrollBy(0, distance);
-                            totalHeight += distance;
-                            
-                            if(totalHeight >= document.body.scrollHeight){
-                                clearInterval(timer);
-                                resolve();
-                            }
-                        }, 100);
-                    });
+                    const scrollHeight = document.documentElement.scrollHeight;
+                    const steps = Math.min(5, Math.ceil(scrollHeight / 1000)); // Max 5 scroll steps
+                    
+                    for (let i = 0; i < steps; i++) {
+                        window.scrollBy(0, scrollHeight / steps);
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                    
+                    // Scroll back to top
+                    window.scrollTo(0, 0);
                 }
             """)
-            
-            # Scroll back to top
-            await page.evaluate("window.scrollTo(0, 0)")
-            await page.wait_for_timeout(1000)
             
             print("[Scraper] Page loaded, extracting data...")
             
