@@ -1,4 +1,4 @@
-const API_URL = 'https://scrape-create-production.up.railway.app/scrape';
+const API_URL = 'https://scrape-create-production.up.railway.app/scrape-and-create';
 
 let currentData = null;
 
@@ -6,7 +6,7 @@ let currentData = null;
 const urlInput = document.getElementById('url-input');
 const saveAssetsCheckbox = document.getElementById('save-assets');
 const convertWebpCheckbox = document.getElementById('convert-webp');
-const scrapeBtn = document.getElementById('scrape-btn');
+const scrapeCreateBtn = document.getElementById('scrape-create-btn');
 const loading = document.getElementById('loading');
 const error = document.getElementById('error');
 const results = document.getElementById('results');
@@ -29,8 +29,8 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
-// Scrape button handler
-scrapeBtn.addEventListener('click', async () => {
+// Scrape & Create button handler
+scrapeCreateBtn.addEventListener('click', async () => {
     const url = urlInput.value.trim();
     
     if (!url) {
@@ -38,13 +38,13 @@ scrapeBtn.addEventListener('click', async () => {
         return;
     }
     
-    await scrapeWebsite(url);
+    await scrapeAndCreate(url);
 });
 
 // Allow Enter key to submit
 urlInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
-        scrapeBtn.click();
+        scrapeCreateBtn.click();
     }
 });
 
@@ -59,13 +59,13 @@ copyJsonBtn.addEventListener('click', () => {
     });
 });
 
-async function scrapeWebsite(url) {
+async function scrapeAndCreate(url) {
     // Show loading
-    loading.querySelector('p').textContent = 'Scraping website... This may take 30-60 seconds';
+    loading.querySelector('p').textContent = '✨ Scraping website and sending to v0.dev... This may take 60-90 seconds';
     loading.classList.remove('hidden');
     error.classList.add('hidden');
     results.classList.add('hidden');
-    scrapeBtn.disabled = true;
+    scrapeCreateBtn.disabled = true;
     
     try {
         const response = await fetch(API_URL, {
@@ -75,8 +75,8 @@ async function scrapeWebsite(url) {
             },
             body: JSON.stringify({
                 url: url,
-                save_assets: saveAssetsCheckbox.checked,
-                convert_to_webp: convertWebpCheckbox.checked,
+                save_assets: false,
+                convert_to_webp: false,
                 timeout: 60000
             })
         });
@@ -88,14 +88,67 @@ async function scrapeWebsite(url) {
         const data = await response.json();
         currentData = data;
         
-        displayResults(data);
+        displayV0Results(data);
         
     } catch (err) {
-        showError(`Failed to scrape website: ${err.message}`);
+        showError(`Failed to scrape and create: ${err.message}`);
     } finally {
         loading.classList.add('hidden');
-        scrapeBtn.disabled = false;
+        scrapeCreateBtn.disabled = false;
     }
+}
+
+function displayV0Results(data) {
+    const { scrape_data, v0_prompt, v0_response, message } = data;
+    
+    results.classList.remove('hidden');
+    
+    // Show success message
+    let html = `
+        <div class="info-card" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border: 2px solid #667eea;">
+            <h3>✨ Website Transformation Complete!</h3>
+            <p><strong>Status:</strong> ${message || 'Successfully created beautiful modern version!'}</p>
+        </div>
+    `;
+    
+    // Show v0 response if available
+    if (v0_response) {
+        html += '<div class="section-title">🎉 v0 Generated Your New Site!</div>';
+        html += '<div class="info-card" style="background: #f0fdf4; border: 2px solid #10b981;">';
+        html += '<p><strong>✅ Success!</strong> v0.dev has created a beautiful modern version of your website.</p>';
+        html += '<p>Check your v0.dev dashboard to see the generated code!</p>';
+        html += '</div>';
+        html += '<pre style="max-height: 400px; overflow-y: auto;">' + JSON.stringify(v0_response, null, 2) + '</pre>';
+    } else {
+        html += '<div class="info-card" style="background: #fff5f5; border: 2px solid #f56565;">';
+        html += '<h4>⚠️ v0 API Key Not Set</h4>';
+        html += '<p>To enable automatic v0 generation:</p>';
+        html += '<ol style="margin-left: 1.5rem; margin-top: 0.5rem;">';
+        html += '<li>Go to <a href="https://v0.dev/settings/api-keys" target="_blank">v0.dev API settings</a></li>';
+        html += '<li>Create a new API key</li>';
+        html += '<li>Add it to Railway as <code>V0_API_KEY</code> environment variable</li>';
+        html += '</ol>';
+        html += '</div>';
+    }
+    
+    // Show the v0 prompt
+    html += '<div class="section-title">📝 v0 Prompt (what was sent to v0.dev)</div>';
+    html += '<pre style="max-height: 400px; overflow-y: auto;">' + escapeHtml(v0_prompt) + '</pre>';
+    
+    // Show scraped data
+    if (scrape_data) {
+        html += '<div class="section-title">📊 Scraped Data from Original Site</div>';
+        const content = scrape_data.content || {};
+        const meta = scrape_data.meta || {};
+        html += '<div class="info-card">';
+        html += `<p><strong>Title:</strong> ${escapeHtml(meta.title || 'N/A')}</p>`;
+        html += `<p><strong>Headings:</strong> ${content.headings?.length || 0}</p>`;
+        html += `<p><strong>Paragraphs:</strong> ${content.paragraphs?.length || 0}</p>`;
+        html += `<p><strong>Images:</strong> ${scrape_data.assets?.images?.length || 0}</p>`;
+        html += '</div>';
+    }
+    
+    document.getElementById('overview-tab').innerHTML = html;
 }
 
 function showError(message) {

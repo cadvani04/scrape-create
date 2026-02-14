@@ -26,13 +26,20 @@ def build_v0_prompt(scrape_data: Dict[str, Any], url: str) -> str:
     # Build the prompt
     lines = []
     
-    lines.append("Recreate this website using React + Tailwind CSS + shadcn/ui.")
+    lines.append("Create a BEAUTIFUL, MODERN, PROFESSIONAL website using React + Tailwind CSS + shadcn/ui.")
     lines.append("")
-    lines.append("# Website Information")
-    lines.append(f"- Original URL: {url}")
-    lines.append(f"- Title: {meta.get('title', 'Untitled')}")
+    lines.append("🚨 CRITICAL REQUIREMENTS:")
+    lines.append("1. Use EVERY piece of text content provided below EXACTLY as written")
+    lines.append("2. Use ALL image URLs provided - do NOT use placeholders or dummy images")
+    lines.append("3. Match the visual hierarchy and layout of the original")
+    lines.append("4. Make it look modern, clean, and professional")
+    lines.append("5. Fully responsive and mobile-friendly")
+    lines.append("")
+    lines.append("# Original Website")
+    lines.append(f"URL: {url}")
+    lines.append(f"Title: {meta.get('title', 'Untitled')}")
     if meta.get('description'):
-        lines.append(f"- Description: {meta.get('description')}")
+        lines.append(f"Description: {meta.get('description')}")
     lines.append("")
     
     # Design tokens
@@ -60,73 +67,111 @@ def build_v0_prompt(scrape_data: Dict[str, Any], url: str) -> str:
             lines.append(f"- Font: {font}")
         lines.append("")
     
-    # Content structure
-    if content.get('headings'):
-        lines.append("# Content Structure")
+    # Images - MOST IMPORTANT - Put this FIRST
+    if assets.get('images'):
+        lines.append("# 🖼️ IMAGES - USE THESE EXACT URLs!")
         lines.append("")
-        lines.append("## Key Headings (maintain hierarchy)")
-        for heading in content['headings'][:8]:
+        lines.append("⚠️ IMPORTANT: Use these EXACT image URLs in your code. Do NOT use placeholders!")
+        lines.append("")
+        for i, img in enumerate(assets['images'], 1):
+            url_full = img.get('url', '')
+            alt = img.get('alt', f'Image {i}')
+            lines.append(f"{i}. {alt}")
+            lines.append(f"   URL: {url_full}")
+            lines.append(f"   Alt text: {alt}")
+            lines.append("")
+        lines.append("")
+    
+    # All Headings with EXACT text
+    if content.get('headings'):
+        lines.append("# 📝 HEADINGS - Use EXACT Text")
+        lines.append("")
+        lines.append("Copy these headings EXACTLY as written, maintaining hierarchy:")
+        lines.append("")
+        for heading in content['headings']:
             level = heading.get('level', 1)
             text = heading.get('text', '')
             lines.append(f"{'#' * level} {text}")
         lines.append("")
     
-    # Key content
+    # All Paragraphs with EXACT text
     if content.get('paragraphs'):
-        lines.append("## Key Copy/Content")
-        for para in content['paragraphs'][:5]:
-            if len(para) > 20:  # Skip very short paragraphs
-                lines.append(f"- {para[:150]}..." if len(para) > 150 else f"- {para}")
+        lines.append("# 📄 PARAGRAPHS - Use EXACT Text")
+        lines.append("")
+        lines.append("Include ALL of this text content in your website:")
+        lines.append("")
+        for i, para in enumerate(content['paragraphs'], 1):
+            if len(para) > 10:
+                lines.append(f"Paragraph {i}:")
+                lines.append(f'"{para}"')
+                lines.append("")
         lines.append("")
     
     # Navigation
     if content.get('navigation'):
-        lines.append("## Navigation Items")
-        for nav in content['navigation'][:8]:
-            lines.append(f"- {nav.get('text', '')}")
+        lines.append("# 🧭 NAVIGATION - Use EXACT Text")
+        lines.append("")
+        for nav in content['navigation']:
+            text = nav.get('text', '')
+            href = nav.get('href', '#')
+            if text:
+                lines.append(f"- {text} (link: {href})")
         lines.append("")
     
-    # Images
-    if assets.get('images'):
-        lines.append("# Visual Assets")
+    # Lists
+    if content.get('lists'):
+        lines.append("# 📋 LISTS - Use EXACT Text")
         lines.append("")
-        lines.append("## Images (use placeholder images with similar style)")
-        for img in assets['images'][:5]:
-            alt = img.get('alt', 'Image')
-            lines.append(f"- {alt}: {img.get('url', '')[:80]}")
-        lines.append("")
+        for list_item in content['lists']:
+            list_type = list_item.get('type', 'ul')
+            items = list_item.get('items', [])
+            if items:
+                for item in items:
+                    lines.append(f"• {item}")
+                lines.append("")
     
     # Layout guidance
-    lines.append("# Layout & Design Guidelines")
+    lines.append("# 🎨 DESIGN & LAYOUT REQUIREMENTS")
     lines.append("")
-    lines.append("## Structure")
-    lines.append("- Sticky navigation bar at top")
-    lines.append("- Hero section with primary CTA")
-    lines.append("- Content sections with clear hierarchy")
-    lines.append("- Footer with contact/info")
+    lines.append("## Layout Structure")
+    lines.append("1. **Header/Navigation**")
+    lines.append("   - Sticky/fixed at top")
+    lines.append("   - Use navigation items listed above")
     lines.append("")
-    lines.append("## Style")
-    lines.append("- Modern, clean design")
-    lines.append("- Mobile-first responsive")
+    lines.append("2. **Hero Section**")
+    lines.append("   - Use first image from images list above")
+    lines.append("   - Use first heading as hero title")
+    lines.append("   - Include primary CTA button")
+    lines.append("")
+    lines.append("3. **Content Sections**")
+    lines.append("   - Use ALL headings in proper hierarchy")
+    lines.append("   - Use ALL paragraph text provided")
+    lines.append("   - Place images where they appear in the content flow")
+    lines.append("")
+    lines.append("4. **Footer**")
+    lines.append("   - Contact information")
+    lines.append("   - Navigation links")
+    lines.append("")
+    lines.append("## Visual Style")
+    lines.append("- Modern, clean, professional aesthetic")
+    lines.append("- Use color palette extracted above")
+    lines.append("- Beautiful typography with proper hierarchy")
     lines.append("- Smooth animations and transitions")
-    lines.append("- High contrast for accessibility")
-    lines.append("- Use the extracted color palette")
+    lines.append("- High contrast for readability")
+    lines.append("- Mobile-first responsive design")
     lines.append("")
-    lines.append("## Components Needed")
-    if content.get('navigation'):
-        lines.append("- Navigation/Header")
-    lines.append("- Hero section")
-    if content.get('headings'):
-        lines.append(f"- {len([h for h in content['headings'] if h.get('level', 1) == 2])} main content sections")
-    if assets.get('images'):
-        lines.append("- Image gallery or showcase")
-    lines.append("- Footer")
+    lines.append("## 🚨 CRITICAL - DO NOT:")
+    lines.append("- ❌ Do NOT use placeholder images - use the EXACT URLs provided")
+    lines.append("- ❌ Do NOT use lorem ipsum - use the EXACT text provided")
+    lines.append("- ❌ Do NOT skip any content - include EVERYTHING")
+    lines.append("- ❌ Do NOT change the wording - copy it EXACTLY")
     lines.append("")
-    lines.append("# Important")
-    lines.append("- Match the visual style and brand feel of the original")
-    lines.append("- Maintain the content hierarchy and flow")
-    lines.append("- Make it fully responsive and accessible")
-    lines.append("- Use real content from above, not lorem ipsum")
+    lines.append("## ✅ MUST DO:")
+    lines.append("- ✅ Use ALL images from the images list with their exact URLs")
+    lines.append("- ✅ Use ALL text content exactly as provided")
+    lines.append("- ✅ Make it look modern and beautiful")
+    lines.append("- ✅ Make it fully functional and responsive")
+    lines.append("- ✅ Use proper semantic HTML and accessibility")
     
     return "\n".join(lines)
 
